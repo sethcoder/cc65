@@ -1,8 +1,8 @@
 ;
 ; Fixed point cosine/sine functions.
 ;
-; int __fastcall__ cc65_sin (unsigned x);
-; int __fastcall__ cc65_cos (unsigned x);
+; int __fastcall__ _sin (unsigned x);
+; int __fastcall__ _cos (unsigned x);
 ;
 ; Returns the cosine/sine for the given argument as angular degree.
 ; Valid argument range is 0..360 for both functions. They will return
@@ -13,7 +13,7 @@
 ; Ullrich von Bassewitz, 2009-10-29
 ;
 
-        .export         _cc65_cos, _cc65_sin
+        .export         __cos, __sin
 
 
 ; ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@
 
 .rodata
 
-_cc65_sintab:
+_sintab:
         .byte   $00, $04, $09, $0D, $12, $16, $1B, $1F, $24, $28
         .byte   $2C, $31, $35, $3A, $3E, $42, $47, $4B, $4F, $53
         .byte   $58, $5C, $60, $64, $68, $6C, $70, $74, $78, $7C
@@ -37,13 +37,13 @@ _cc65_sintab:
 
 
 ; ---------------------------------------------------------------------------
-; Cosine function. Is actually implemented as cos(x) = sin(x+90)
+; Cosine function. Is actually implemented as _cos(x) = _sin(x+90)
 
 .code
 
-_cc65_cos:
+__cos:
 
-; cos(x) = sin(x+90)
+; _cos(x) = _sin(x+90)
 
         clc
         adc     #90
@@ -55,7 +55,7 @@ _cc65_cos:
 @L1:    cpx     #>360
         bne     @L2
         cmp     #<360
-@L2:    bcc     _cc65_sin
+@L2:    bcc     __sin
 
         sbc     #<360
         bcs     @L3
@@ -66,12 +66,12 @@ _cc65_cos:
 ; Sine function. Uses
 ;
 ;       table lookup            for 0..89°
-;       sin(x) = sin(180-x)     for 90°..179°
-;       sin(x) = -sin(x-180)    for 180..360°
+;       _sin(x) = _sin(180-x)   for 90°..179°
+;       _sin(x) = -_sin(x-180)  for 180..360°
 ;
 ; Plus special handling for the values missing in the table.
 
-_cc65_sin:
+__sin:
 
 ; If the high byte is non zero, argument is > 255
 
@@ -85,7 +85,7 @@ _cc65_sin:
         cmp     #90
         bcc     L1
 
-; 90..179°. Value is identical to sin(180-val). Carry is set on entry.
+; 90..179°. Value is identical to _sin(180-val). Carry is set on entry.
 ;
 ;       180-val := -val + 180.
 ; With
@@ -114,10 +114,10 @@ L1:     cmp     #87
 
 L2:     tay
         ldx     #0
-        lda     _cc65_sintab,y
+        lda     _sintab,y
         rts
 
-; 180..360°. sin(x) = -sin(x-180). Since the argument is in range 0..180
+; 180..360°. _sin(x) = -_sin(x-180). Since the argument is in range 0..180
 ; after the subtraction, we don't need to handle the high byte.
 
 L3:     sec
@@ -126,7 +126,7 @@ L4:     sbc     #180
         cmp     #90
         bcc     L5
 
-; 270..360°. Value is identical to -sin(180-val). Carry is set on entry.
+; 270..360°. Value is identical to -_sin(180-val). Carry is set on entry.
 ;
 ;       180-val := -val + 180.
 ; With
@@ -155,10 +155,8 @@ L5:     ldx     #$FF
 
 L6:     tay
         txa                     ; A = $FF
-        eor     _cc65_sintab,y
+        eor     _sintab,y
         adc     #1
         bcc     L7
         inx
 L7:     rts
-
-
